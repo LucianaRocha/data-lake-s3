@@ -11,7 +11,7 @@ from pyspark.sql.functions import udf, col
 from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format
 
 config = configparser.ConfigParser()
-config.read('dl.cfg')
+#config.read('dl.cfg')
 
 #os.environ['AWS_ACCESS_KEY_ID']=config['aws']['AWS_ACCESS_KEY_ID']
 #os.environ['AWS_SECRET_ACCESS_KEY']=config['aws']['AWS_SECRET_ACCESS_KEY']
@@ -56,18 +56,27 @@ def process_song_data(spark, input_data, output_data):
               song_id ASC")
 
     # write songs table to parquet files partitioned by year and artist
-    songs_table.write.mode('overwrite').partitionBy('year','artist_id').parquet(output_data + '_songs')
+    songs_table.write.mode('overwrite').partitionBy('year','artist_id').parquet(output_data + 'songs_table')
     #songs_table.write.parquet( output_data)
 
-print('step 3 output song_data')
+    print('step 3 output song_data')
 
-'''
+
     # extract columns to create artists table
-    artists_table = 
-    
-    # write artists table to parquet files
-    artists_table
+    artists_table = spark.sql("SELECT DISTINCT \
+                artist_id, \
+                artist_name, \
+                artist_location, \
+                artist_latitude, \
+                artist_longitude \
+             FROM df_song_data \
+             WHERE ISNOTNULL(artist_id)")
 
+    print('fim select artists')
+
+    # write artists table to parquet files
+    artists_table.write.mode('overwrite').partitionBy('artist_id').parquet(output_data + 'artists_table')
+'''
 
 def process_log_data(spark, input_data, output_data):
     # get filepath to log data file
