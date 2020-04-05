@@ -70,21 +70,25 @@ def process_song_data(spark, input_data, output_data):
                 artist_latitude, \
                 artist_longitude \
              FROM df_song_data \
-             WHERE ISNOTNULL(artist_id)")
+             WHERE \
+                 ISNOTNULL(artist_id)")
 
     print('fim select artists')
 
     # write artists table to parquet files
     artists_table.write.mode('overwrite').partitionBy('artist_id').parquet(output_data + 'artists_table')
-'''
+
 
 def process_log_data(spark, input_data, output_data):
     # get filepath to log data file
-    log_data =
+    log_data = input_data + 'log_data/*.json'
+
 
     # read log data file
-    df = 
-    
+    df = spark.read.json(log_data)
+    df.createOrReplaceTempView(df_log_data)
+ 
+'''    
     # filter by actions for song plays
     df = 
 
