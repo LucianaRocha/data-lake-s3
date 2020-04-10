@@ -194,24 +194,9 @@ def main():
     input_data = "s3a://sparkfy-input/data/"
     output_data = "s3a://sparkfy-output/spark-datalake/"
     
-    #input_data = './data/'
-    #output_data = './spark-warehouse/'
-
     process_song_data(spark, input_data, output_data)    
     process_log_data(spark, input_data, output_data)
 
-    # spark = create_spark_session()
-    #log_file = spark.read.json(input_data+'data/log_data/2018-11-01-events.json')
-    #log_df = spark.read.load(input_data+'data/log_data/', format='json')
-    #print(log_df.count())
-    
-    #song_file = input_data+'data/song_data/A/A/A/*.json'
-    #print(song_file)
-    #df_t = spark.read.json(song_file)
-
-    #log_df.filter(log_df.gender == 'F').select('userId', 'gender').show()
-    #song_df.select('songId', 'title').show()
-    #print(song_df.count())
 
 if __name__ == "__main__":
     main()
