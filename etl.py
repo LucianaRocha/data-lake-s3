@@ -152,7 +152,7 @@ def process_log_data(spark, input_data, output_data):
     # write time table to parquet files partitioned by year and month
     time_table.write.mode('overwrite').partitionBy('year', 'month') \
     .parquet(output_data + 'time_table')
-'''
+
     # read in song data to use for songplays table
     songplays_df = log_data_df.filter(log_data_df.page == 'NextSong') \
         .dropDuplicates()
@@ -186,13 +186,13 @@ def process_log_data(spark, input_data, output_data):
     # write songplays table to parquet files partitioned by year and month
     songplays_table.write.mode('overwrite').partitionBy('year', 'month'). \
         parquet(output_data + 'songplays_table')
-'''
+
 
 def main():
     """Create a spark session"""
     spark = create_spark_session()
     input_data = "s3a://sparkfy-input/data/"
-    output_data = "s3a://sparkfy-output/spark-warehouse/"
+    output_data = "s3a://sparkfy-output/spark-datalake/"
     
     #input_data = './data/'
     #output_data = './spark-warehouse/'
