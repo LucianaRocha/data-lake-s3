@@ -19,13 +19,15 @@ This project is part of the [Data Engineering Nanodegree Program](https://www.ud
 
 ## Introduction  
 
-A music streaming startup, Sparkify, has grown their user base and song database and want to move their processes and data onto the cloud. Their data resides in S3, in a directory of JSON logs on user activity on the app, as well as a directory with JSON metadata on the songs in their app.
+A music streaming startup, Sparkify, has grown its user base and song database even more and want to move their data warehouse to a data lake. Their data resides in S3, in a directory of JSON logs on user activity on the app, as well as a directory with JSON metadata on the songs in their app.
 
-As their data engineer, I am tasked with building an ETL pipeline that extracts their data from S3, stages them in Redshift, and transforms data into a set of dimensional tables for their analytics team to continue finding insights in what songs their users are listening to. It is possible to test the database and ETL pipeline by running queries given to me by the analytics team from Sparkify and compare the results with the expected results.
+As their data engineer, I was tasked with building an ETL pipeline that extracts their data from S3, processes them using Spark, and loads the data back into S3 as a set of dimensional tables. This will allow their analytics team to continue finding insights into what songs their users are listening to.
+
+It is possible to test the database and ETL pipeline by running queries given to you by the analytics team from Sparkify and compare your results with their expected results.
 
 ### Project Description  
 
-In this project, I applied what I've learned on data warehouses and AWS to build an ETL pipeline for a database hosted on Redshift. To complete the project, I needed to load data from S3 to staging tables on Redshift and execute SQL statements that create the analytics tables from these staging tables.
+In this project, I applied what I have learned on Spark and data lakes to build an ETL pipeline for a data lake hosted on S3. To complete the project, I needed to load data from S3, process the data into analytics tables using Spark, and load them back into S3. I deployed this Spark process on a cluster using AWS.
 
 # Star Schema for Song Play Analysis
 For this project, I used the song and log datasets and created a [star-schema model](https://en.wikipedia.org/wiki/Star_schema) optimized for queries on song play analysis. 
@@ -90,8 +92,7 @@ For this project, I modeled a star-schema that includes one fact table and four 
 I worked with two datasets that reside in S3. Here are the S3 links for each:  
 	- Song data: s3://udacity-dend/song\_data  
 	- Log data: s3://udacity-dend/log\_data  
-		
-Log data json path: s3://udacity-dend/log\_json\_path.json
+
 
 ### Song Dataset
 
@@ -291,3 +292,4 @@ There are many BI techniques and I would like improve this model with [Kimball T
 - PostgreSQL [documentation](https://www.postgresql.org/docs/11/index.html)
 - AWS Documentation [documentation](https://docs.aws.amazon.com/index.html)
 - SQL [Kickstarter SQL Style Guide](https://gist.github.com/fredbenenson/7bb92718e19138c20591)  
+- Doctring Conventions [PEP 257](https://www.python.org/dev/peps/pep-0257/)

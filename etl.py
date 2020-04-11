@@ -1,18 +1,16 @@
-# Import the necessary packages
-import boto3
+# Standard library imports
 import configparser
 import glob
-import numpy as np
 import os
-import pandas as pd
-
 from datetime import datetime
+
+# Related third part imports
+import boto3
+import numpy as np
+import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col, year, month, dayofmonth, dayofweek
 from pyspark.sql.functions import hour, weekofyear, date_format, from_unixtime
-
-#config = configparser.ConfigParser()
-#config.read('dl.cfg')
 
 def create_spark_session():
     """Create a Spark session."""
@@ -26,7 +24,6 @@ def create_spark_session():
 def process_song_data(spark, input_data, output_data):
     """
     Write songs table and artists table to parquet files on S3.
-    
     Keyword arguments:
     spark -- a spark session
     input_data -- the script reads song_data from S3
@@ -34,7 +31,7 @@ def process_song_data(spark, input_data, output_data):
     """
     # get filepath to song data file
     song_data = input_data + 'song_data/*/*/*/*.json'
-    
+
     # read song data file
     song_data_df = spark.read.json(song_data)
     song_data_df = song_data_df.dropDuplicates()
@@ -85,17 +82,16 @@ def process_song_data(spark, input_data, output_data):
 def process_log_data(spark, input_data, output_data):
     """
     Write users, time and songplays tables to parquet files on S3.
-    
     Keyword arguments:
     spark -- a spark session
     input_data -- the script reads log_data from S3
     output_data -- the script writes tables to partitioned parquet on S3
     """
-    
-    # get filepath to log data file
+
+    # get filepath to log data files
     log_data = input_data + 'log_data/*.json'
-    
-    # read log data file
+
+    # read log data files
     log_data_df = spark.read.json(log_data)
  
     # filter by actions for song plays
@@ -103,7 +99,7 @@ def process_log_data(spark, input_data, output_data):
         .dropDuplicates()
     log_data_df.createOrReplaceTempView("log_data_view")
 
-    # extract columns for users table    
+    # extract columns for users table
     users_table = spark.sql(
         "SELECT DISTINCT \
             userid, \
@@ -123,7 +119,7 @@ def process_log_data(spark, input_data, output_data):
     # create timestamp column from original timestamp column
     get_timestamp = udf(lambda x: x // 1000)
     ts_df = log_data_df.select(log_data_df.ts)
-    ts_df = ts_df.withColumn('timestamp', get_timestamp('ts')) 
+    ts_df = ts_df.withColumn('timestamp', get_timestamp('ts'))
     
     # create datetime column from original timestamp column
     ts_df = ts_df.withColumn('start_time', from_unixtime('timestamp'))
@@ -133,12 +129,12 @@ def process_log_data(spark, input_data, output_data):
     ts_df = ts_df.withColumn('month', month('start_time'))
     ts_df = ts_df.withColumn('year', year('start_time'))
     ts_df = ts_df.withColumn('week_day', dayofweek('start_time'))
-    ts_df.dropDuplicates()    
+    ts_df.dropDuplicates()
     
     # extract columns to create time table
     ts_df.createOrReplaceTempView("ts_df_view")
     time_table = spark.sql(
-            "SELECT DISTINCT \
+        "SELECT DISTINCT \
             start_time, \
             hour, \
             day, \
@@ -157,10 +153,11 @@ def process_log_data(spark, input_data, output_data):
     songplays_df = log_data_df.filter(log_data_df.page == 'NextSong') \
         .dropDuplicates()
     songplays_df = songplays_df.withColumn('timestamp', get_timestamp('ts'))
-    songplays_df = songplays_df.withColumn('start_time', from_unixtime('timestamp'))
+    songplays_df = songplays_df.withColumn('start_time', \
+        from_unixtime('timestamp'))
     songplays_df.createOrReplaceTempView("songplays_view")
 
-    # extract columns from joined song and log datasets to create songplays table 
+    # extract columns from song + log datasets to create songplays table 
     songplays_table = spark.sql(
             "SELECT \
                 row_number() over (order by 'start_time', 'user_id', \
@@ -183,18 +180,19 @@ def process_log_data(spark, input_data, output_data):
                 on time.start_time = plays.start_time"
     )
 
-    # write songplays table to parquet files partitioned by year and month
+    # write songplays table to parquet files partitioned by year + month
     songplays_table.write.mode('overwrite').partitionBy('year', 'month'). \
         parquet(output_data + 'songplays_table')
 
 
 def main():
-    """Create a spark session"""
-    spark = create_spark_session()
     input_data = "s3a://sparkfy-input/data/"
     output_data = "s3a://sparkfy-output/spark-datalake/"
+
+    #Create a spark session
+    spark = create_spark_session()
     
-    process_song_data(spark, input_data, output_data)    
+    process_song_data(spark, input_data, output_data)
     process_log_data(spark, input_data, output_data)
 
 
