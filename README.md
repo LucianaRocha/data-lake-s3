@@ -12,6 +12,9 @@
 [image10]: ./images/result_null.png "Result null"
 [image11]: ./images/result_count.png "Result count"
 [image12]: ./images/dwh_cfg.png "config"
+[image13]: ./images/ssh_windows.png "ssh_windows"
+[image14]: ./images/ssh_linux.png "ssh_linux"
+
 
 
 # Project: Data Warehouse hosted on Amazon S3
@@ -58,30 +61,25 @@ For this project, I modeled a star-schema that includes one fact table and four 
 - **songplays:** records in log data associated with song plays. The log data was filtered with page = 'NextSong'.  
 
 	- Columns: songplay\_id, start\_time, user\_id, level, song\_id, artist\_id, session\_id, location, user\_agent.  
-	- Distribution strategy: sortkey distkey in start\_time
-	- Solution: I decided to use this strategy because it is fact table with 62046 rows (big table)
+	- Distribution strategy: partitioned parquet files by **year and month** in table directories on S3
 
 **Dimension Tables**  
 
 - **users:** users in the app.  
 	- Columns: user\_id, first\_name, last\_name, gender, level.
-	- Distribution strategy: sortkey in user\_id and diststyle all
-	- Solution: I decided to use this strategy because this table is a small dimension with 208 rows
+	- Distribution strategy: partitioned parquet files by **user\_id** in table directories on S3
 
 - **songs:** songs in music database.  
 	- Columns: song\_id, title, artist\_id, year, duration  
-	- Distribution strategy: sortkey distkey in song\_id
-	- Solution: I decided to use this strategy because this table is a large dimension with 119168 rows 
+	- Distribution strategy: partitioned parquet files by **year and artist\_id** in table directories on S3
 
 - **artists:** artists in music database.
 	- Columns: artist\_id, name, location, latitude, longitude  
-	- Distribution strategy: sortkey distkey in artist\_id
-	- Solution: I decided to use this strategy because this table is a large dimension with 80200 rows 
+	- Distribution strategy: partitioned parquet files by **artist\_id** in table directories on S3
 
 - **time:** timestamps of records in songplays broken down into specific units.
 	- Columns: start\_time, hour, day, week, month, year, weekday  
-	- Distribution strategy: sortkey in start\_time and diststyle all
-	- Solution: I decided to use this strategy because this table is a small dimension with 13626 rows
+	- Distribution strategy: partitioned parquet files by **year and month** in table directories on S3
 	
 ![Data Modeling][image8]  
 	
@@ -119,109 +117,68 @@ And below is an example of what the data in a log file, 2018-11-01-events.json, 
 
 # ETL pipeline
 
-I created three files **.py** that can be run by Anaconda Prompt (Windows) or Terminal (Linux) without the help of a graphic interface. The files are organized as follows:  
+I created the **etl.py** that can be run by Anaconda Prompt (Windows) or Terminal (Linux) without the help of a graphic interface. The file is organized as below:  
 
-- **sql_queries.py:** 
-	- contains sql queries to: drop tables, create tables, insert tables, and copy operations   
-		- **create\_table\_queries:** for each 'create table' command was assigned a variable name 
-		- **drop\_table\_queries:** for each 'drop table' command was assigned a variable name  
-	- for each 'insert table' command was assigned a variable name
-	- There are 2 COPY operations to load 2 staging tables which were used as a data source to load the  dimensions and fact tables
-		- staging_events
-		- staging_songs
-
-The lists are imported and used in create\_tables.py  
-
-- **create_tables.py:**  
-	- creates a star schema for this project
-	- creates a database for this project
-	- imports the psycopg2 to create a connection and a cursor for this project
-	- imports the lists from sql\_queries.py 
-	- defines a function that uses the drop\_table\_queries list and runs a drop commands sequentially
-	- defines a function that uses the create\_table\_queries list and runs a create commands sequentially  
-
-- **etl.py:**  
-	- imports the sql\_queries.py 
-	- defines functions that:
+- **etl.py file:**  
+	- imports the necessary packages
+	- creates a spark session
+	- defines functions to:
 		- read the data files (log\_data and song\_data)
-		- create staging tables for data files
-		- insert data into each table. The functions use the variable names defined for each 'insert table' command in **sql_queries.py**  
+		- extract columns to create tables
+		- write the tables on S3
 	
 
 # Getting Started
 ## Files included in this repository  
 The project includes six files:  
 
- 1. **create_tables.py:** drops and creates your tables. You run this file to reset your tables before each time you run your ETL scripts.  
- 2. **dw\_hosted\_on\_redshift.ipynb:** reads and processes a single file from song_data and log_data and loads the data into your tables. This notebook contains detailed instructions on the ETL process for each of the tables.  
- 3. **etl.py:** reads and processes files from song\_data and log\_data and loads them into your tables. You can fill this out based on your work in the ETL notebook.  
- 4. **sql_queries.py:** contains all your sql queries, and is imported into the last three files above.  
- 5. **README.md:** provides discussion about this project. 
+ 1.  **etl.py:** reads and processes files from song\_data and log\_data and loads them into your tables. 
+ 2. **README.md:** provides discussion about this project. 
+ 3. I did not use a 'dl.cfg' with my AWS credentials because I ran the 'etl.py' into own my AWS environment
 
 ## Preparing the environment to run the project
-**1.** Install the Anaconda Plataform
 
-- For more information about it, see [Anaconda Installation Guide](https://docs.anaconda.com/anaconda/install/) and [User guide](https://docs.anaconda.com/anaconda/user-guide/)
+**1.** On [AWS Console](https://aws.amazon.com/) it is necessary:  
 
-- Download the [Anaconda Installer](https://www.anaconda.com/distribution/), version Python 3.x  
-conda  
+- Create a [AWS account](https://aws.amazon.com/pt/premiumsupport/knowledge-center/create-and-activate-aws-account/)  
+- Create a SSH key pair to connect on cluster AWS EMR
+	+ [Create key pair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html)
+	+ Download this key pair to your local environment  
+- Go to EMR and create a cluster 
+	+ [Create a EMR cluster](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-gs-launch-sample-cluster.html)
+- Go to S3 and Create an S3 Buckets (input and output)  
+	+ [Create S3 Buckets](https://docs.aws.amazon.com/AmazonS3/latest/gsg/CreatingABucket.html)
+- Connect to the Master Node Using SSH
+	+ **Windows:**  
+		* Download PuTTY.exe to your computer from [Windows](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html)
+		* Start PuTTY and follow the orientations on AWS platform
+![Windows][image13]
+	+ **Linux:**  
+![Linux][image14]
 
-**2.** Create and activate a new environment for this project
+- On EMR you will need install
+	+ pip3 install boto3  
+	+ pip3 install pandas  
+	+ pip3 install pyspark
 
-- Open Anaconda Prompt (Windows) or Terminal (Linux) and type
+- In my environment I needed set a few paths like below. Check if this is necessary in your environment:
+	+ sudo alternatives --set python /usr/bin/python3.6  
+	+ curl -O https://bootstrap.pypa.io/get-pip.py  
+	+ python3 get-pip.py --user  
+	+ sudo sed -i -e '$a\export PATH=/home/hadoop/.local/bin:$PATH' /home/hadoop/.bash_profile  
+	+ sudo sed -i -e '$a\export PYSPARK_PYTHON=/usr/bin/python3' /etc/spark/conf/spark-env.sh  
+	+ sudo sed -i -e '$a\export PYSPARK_DRIVER_PYTHON=/usr/bin/python3' /etc/spark/conf/spark-env.sh  
+	+ source .bash_profile 
+	+ sudo yum install git -y  
+	+ I shared **sparkfy.sh** in my GitHub to you use it weather necessary. It has all commands above and you can use him to run in your EMR.
 
-	```
-	conda create --name datamodeling
-	```  
-
-	```
-	conda activate datamodeling
-	```
-	
-**3.** Required libraries for this project
-
-Some libraries will be installed with Anaconda installer and others need to be installed later. For this project you will need:  
-
-- ipython-sql (not provided by Anaconda installer)  
-- jsonschema  
-- jupyter notebook  
-- psycopg2 (not provided by Anaconda installer)  
-- python  
-- boto3
-
-**4.** In your new environment check if the required libraries were installed by Anaconda installer  
-
-- In your Anaconda Prompt (Windows) or Terminal (Linux) type the line command below and verify the packages installed by Anaconda.
-		
-	```
-	conda list
-	```  
-
-- Install libraries not provided by Anaconda installer  
-	- In your Anaconda Prompt (Windows) or Terminal (Linux) type the line command below and install the required libraries. Below is an example:
-	
-	```
-	conda install boto3 
-	```  
-
-**5.** On [AWS platform] (https://aws.amazon.com/) it is necessary:  
-
-- Create a dwh.cfg file  
-- Create an IAM Role  
-- Create a Security Group  
-- Launch a Redshift Cluster  
-- Create an IAM user  
-- Create an S3 Bucket  
-- Create a PostgreSQL DB Instance using RDS  
-
-For more information about you can create the steps above see [Getting Started Guide](https://docs.aws.amazon.com/redshift/latest/gsg/getting-started.html)
 
 ## Getting the code 
 There are two options to get this project:
 
 - Download it as a zip file
 
-	- Do the download in this [link](https://github.com/LucianaRocha/data-modeling-with-redshift/archive/master.zip).
+	- Do the download in this [link](https://github.com/LucianaRocha/data-lake-s3/archive/master.zip).
 	- Unzip the file in a folder of your choice.  
 
 - Clone this repository using Git version control system
@@ -229,67 +186,22 @@ There are two options to get this project:
 	- Open Anaconda Prompt (Windows) or Terminal (Linux), navigate to the folder of your choice, and type the command below:  
 
 	```
-	git clone https://github.com/LucianaRocha/data-modeling-with-redshift.git
+	git clone https://github.com/LucianaRocha/data-lake-s3.git
 	```
-	
 
 # Running the project  
 
-There are two options to run this project:  
+To run this project:  
 
-1. By Jupyter Nobebook, or
-2. By Anaconda Prompt (Windows) or Terminal (Linux)
-
-For any options you will need to create a configuration file with the file name dwh.cfg as below:  
-
-![Config][image12]
-
-## By Jupyter Nobebook  
-
--  Open Anaconda Prompt (Windows) or Terminal (Linux), navigate to the project folder, and type the commands below to activate the project environment, and to open Jupyter.
-If you are keen to know more about notebooks and other tools of Project Jupyter, you find more information on this [website](https://jupyter.org/index.html).
-
-	```
-	conda activate datamodeling
-	```
-	
-	```
-	jupyter notebook
-	```	
-
-- Click on the dw\_hosted\_on\_redshift.ipynb to open the notebook and follow the instructions within it.
-
-- Run the notebook.  
-
-![Run notebook][image7]  
-
-
-## By Anaconda Prompt (Windows) or Terminal (Linux)
-
-- Open Anaconda Prompt (Windows) or Terminal (Linux), navigate to the project folder, and type the command below to create the tables:
-
-	```
-	python create_tables.py
-	```
-
-- In your terminal, after creating all tables of the previous step, type the command below to load the tables:  
-		
-	```
-	python etl.py
-	```	
-
-# Ideas for future work
-There are many BI techniques and I would like improve this model with [Kimball Techniques](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/):  
-
-- [Slowly changing dimension](https://www.kimballgroup.com/2013/02/design-tip-152-slowly-changing-dimension-types-0-4-5-6-7/)
-- [Handling Null Foreign Keys in Fact Tables](https://www.kimballgroup.com/2010/10/design-tip-128-selecting-default-values-for-nulls/)
-- [White Paper: An Architecture for Data Quality](https://www.kimballgroup.com/2007/10/white-paper-an-architecture-for-data-quality/)
+- Run the etl.py in your EMR environment and write the command bellow:
+	+ python etl.py
 
 # References
 - Data Warehouse and Business Intelligence Resources [Kimball Techniques](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/)
+- Spark SQL [Dataframe API](http://spark.apache.org/docs/latest/sql-programming-guide.html)
+- Pyspark [functions](http://spark.apache.org/docs/latest/api/python/pyspark.sql.html#module-pyspark.sql.functions)
 - Boto3 Docs [documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
-- PEP8 [style guidelines](https://www.python.org/dev/peps/pep-0008/)
-- PostgreSQL [documentation](https://www.postgresql.org/docs/11/index.html)
 - AWS Documentation [documentation](https://docs.aws.amazon.com/index.html)
 - SQL [Kickstarter SQL Style Guide](https://gist.github.com/fredbenenson/7bb92718e19138c20591)  
 - Doctring Conventions [PEP 257](https://www.python.org/dev/peps/pep-0257/)
+- PEP8 [style guidelines](https://www.python.org/dev/peps/pep-0008/)
