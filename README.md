@@ -14,7 +14,7 @@
 [image12]: ./images/dwh_cfg.png "config"
 
 
-# Project: Data Warehouse hosted on Redshift
+# Project: Data Warehouse hosted on Amazon S3
 This project is part of the [Data Engineering Nanodegree Program](https://www.udacity.com/course/data-engineer-nanodegree--nd027), by [Udacity](https://www.udacity.com/).  
 
 ## Introduction  
